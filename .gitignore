@@ -1,0 +1,26 @@
+# Local Codex/project instructions.
+AGENTS.md
+
+# Raw local dataset backup. The GitHub-ready dataset is data/train_small.jsonl.
+emotion-emotion_69k.csv
+
+# Local model outputs, LoRA adapter files, generated images, and training artifacts.
+outputs/
+
+# Python runtime cache files generated automatically when scripts run.
+__pycache__/
+*.py[cod]
+
+# Local environment files should stay private.
+.env
+.env.*
+
+# Notebook and editor temporary files.
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# Hugging Face / training cache folders can contain very large downloaded models.
+.cache/
+huggingface/
+hf_cache/
