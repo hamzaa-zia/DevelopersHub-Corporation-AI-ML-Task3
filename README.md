@@ -113,6 +113,11 @@ Local adapter files are stored under `outputs/` and are ignored by Git because
 they can be large. If included in final submission, the adapter should be
 uploaded separately to Hugging Face Hub.
 
+Uploaded adapter repositories:
+
+- [mistral-mental-health-lora-safe-v2](https://huggingface.co/hamzaa-zia/mistral-mental-health-lora-safe-v2)
+- [mistral-mental-health-lora-safe-v3](https://huggingface.co/hamzaa-zia/mistral-mental-health-lora-safe-v3)
+
 ---
 
 ## End-to-End Workflow
@@ -231,6 +236,13 @@ Default local adapter path:
 outputs/mistral-mental-health-lora-safe-v3
 ```
 
+Uploaded Hugging Face adapter versions:
+
+| Version | Hugging Face Repository | Notes |
+|---|---|---|
+| Safe v2 | [hamzaa-zia/mistral-mental-health-lora-safe-v2](https://huggingface.co/hamzaa-zia/mistral-mental-health-lora-safe-v2) | Intermediate safety-focused LoRA adapter version. |
+| Safe v3 | [hamzaa-zia/mistral-mental-health-lora-safe-v3](https://huggingface.co/hamzaa-zia/mistral-mental-health-lora-safe-v3) | Cleaner final LoRA adapter version after additional response cleanup and validation. |
+
 This mode requires a CUDA GPU or Colab GPU runtime. Normal CPU-only machines are
 not suitable for running Mistral 7B inference.
 
@@ -311,8 +323,8 @@ For Hugging Face:
 Suggested final submission format:
 
 ```text
-GitHub Repository: <your GitHub repo link>
-Hugging Face Adapter: <your Hugging Face adapter link, if uploaded>
+Hugging Face Adapter v2: https://huggingface.co/hamzaa-zia/mistral-mental-health-lora-safe-v2
+Hugging Face Adapter v3: https://huggingface.co/hamzaa-zia/mistral-mental-health-lora-safe-v3
 Demo Command: streamlit run app.py
 Full Model Note: Mistral 7B inference requires Colab GPU or CUDA GPU.
 ```
