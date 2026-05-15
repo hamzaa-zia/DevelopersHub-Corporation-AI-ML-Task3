@@ -31,7 +31,8 @@ reviewer-friendly interaction flow.
 | Mode | Purpose | Hardware | Entry Point |
 |---|---|---|---|
 | Safe Demo Mode | Shows the chatbot UI, safety behavior, and sample support responses | CPU is enough | `streamlit run app.py` |
-| Full Model Inference | Loads Mistral 7B with the trained LoRA adapter | CUDA GPU / Colab GPU | `python src/inference.py` |
+| Full Adapter Chat UI | Tests the real Mistral 7B LoRA adapter inside Streamlit | CUDA GPU / Colab GPU | `streamlit run app.py`, then select `Full Mistral Adapter (GPU)` |
+| Full Model Inference Script | Loads Mistral 7B with the trained LoRA adapter in the terminal | CUDA GPU / Colab GPU | `python src/inference.py` |
 | Training Workflow | Rebuilds the fine-tuning process | CUDA GPU / Colab GPU | `python src/train.py` |
 
 ---
@@ -186,14 +187,21 @@ Current safety limits:
 
 ## Streamlit Demo App
 
-Run the local demo:
+Run the Streamlit interface:
 
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-The demo app includes:
+The app has two selectable modes in the sidebar:
+
+| Streamlit Mode | What It Does | When to Use |
+|---|---|---|
+| `Keyword Demo (CPU)` | Uses keyword rules from `src/demo_chatbot.py`; does not load Mistral 7B. | Normal laptop review and interface testing. |
+| `Full Mistral Adapter (GPU)` | Loads `src/inference.py`, attaches the LoRA adapter, and generates real model responses in the chat UI. | Colab GPU or CUDA GPU testing. |
+
+The demo mode includes:
 
 - one prompt area for users to share feelings or situations,
 - conversation-style chat bubbles,
@@ -219,6 +227,40 @@ Demo keyword categories include:
 This app is intentionally included so reviewers can verify the interface and
 safety behavior without GPU access. It is not presented as the real fine-tuned
 adapter output.
+
+---
+
+## Real Adapter Testing in Streamlit
+
+To test the real fine-tuned adapter through the chatbot interface:
+
+1. Run the app on Colab GPU or a CUDA-capable machine.
+2. Make sure the adapter files are available locally under:
+
+```text
+outputs/mistral-mental-health-lora-safe-v3
+```
+
+3. Start Streamlit:
+
+```bash
+streamlit run app.py
+```
+
+4. In the sidebar, select:
+
+```text
+Full Mistral Adapter (GPU)
+```
+
+5. Send a message in the chat input.
+
+The first response can take time because the app loads Mistral 7B and attaches
+the LoRA adapter. Crisis/self-harm prompts are still checked before model
+generation.
+
+If the adapter is not stored locally, download it from Hugging Face first or
+update `ADAPTER_PATH` in `src/config.py`.
 
 ---
 
