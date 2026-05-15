@@ -234,33 +234,45 @@ adapter output.
 
 To test the real fine-tuned adapter through the chatbot interface:
 
-1. Run the app on Colab GPU or a CUDA-capable machine.
-2. Make sure the adapter files are available locally under:
+1. Run the app on Colab GPU or a CUDA-capable machine. CPU-only machines are
+   suitable for demo mode only.
+2. Install the project dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Make sure the adapter files are available locally under:
 
 ```text
 outputs/mistral-mental-health-lora-safe-v3
 ```
 
-3. Start Streamlit:
+If the adapter is not stored locally, download it from Hugging Face first or
+update `ADAPTER_PATH` in `src/config.py`.
+
+4. Start Streamlit:
 
 ```bash
 streamlit run app.py
 ```
 
-4. In the sidebar, select:
+5. In the sidebar, select:
 
 ```text
 Full Mistral Adapter (GPU)
 ```
 
-5. Send a message in the chat input.
+6. Send a message in the chat input.
 
 The first response can take time because the app loads Mistral 7B and attaches
 the LoRA adapter. Crisis/self-harm prompts are still checked before model
 generation.
 
-If the adapter is not stored locally, download it from Hugging Face first or
-update `ADAPTER_PATH` in `src/config.py`.
+When full adapter mode is selected for the first time, Hugging Face may download
+the Mistral 7B base model weights. This can be around **14.5 GB**, so the first
+run may take time and requires enough disk space. On Windows, Hugging Face may
+show a symlink/cache warning; this is usually a warning, not a project error.
 
 ---
 
@@ -286,7 +298,9 @@ Uploaded Hugging Face adapter versions:
 | Safe v3 | [hamzaa-zia/mistral-mental-health-lora-safe-v3](https://huggingface.co/hamzaa-zia/mistral-mental-health-lora-safe-v3) | Cleaner final LoRA adapter version after additional response cleanup and validation. |
 
 This mode requires a CUDA GPU or Colab GPU runtime. Normal CPU-only machines are
-not suitable for running Mistral 7B inference.
+not suitable for running Mistral 7B inference. The first run may download the
+large Mistral 7B base model weights, so allow time and disk space for the model
+cache.
 
 ---
 
