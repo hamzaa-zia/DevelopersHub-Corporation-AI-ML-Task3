@@ -6,5 +6,4 @@ peft
 trl
 bitsandbytes
 streamlit
-scikit-learn
 pandas

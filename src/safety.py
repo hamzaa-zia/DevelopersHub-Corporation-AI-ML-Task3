@@ -8,14 +8,22 @@ reassurance, and specific emotional support.
 
 
 CRISIS_KEYWORDS = [
+    "cut myself",
+    "cutting myself",
     "hurt myself",
     "hurting myself",
     "harm myself",
+    "harming myself",
     "kill myself",
+    "killing myself",
     "suicide",
+    "suicidal",
     "end my life",
     "don't want to live",
     "do not want to live",
+    "cannot go on",
+    "can't go on",
+    "overdose",
     "self harm",
     "self-harm",
 ]
