@@ -1,188 +1,318 @@
 # Mental Health Support Chatbot
 
-Fine-tuning workflow for an emotional support chatbot using Mistral 7B, QLoRA, Hugging Face Transformers, PEFT, TRL, bitsandbytes, and EmpatheticDialogues.
+A mental health support chatbot project that demonstrates dataset preparation,
+label engineering, QLoRA fine-tuning workflow, safety handling, response
+evaluation, and a CPU-safe Streamlit demo interface.
 
-This chatbot is for emotional support only. It does not diagnose, treat, or replace professional mental health care. Self-harm or immediate danger prompts are handled by a fixed safety response before model generation.
+The chatbot is designed for emotional support only. It does not diagnose,
+treat, or replace therapy, counseling, emergency care, or professional medical
+advice. Self-harm or immediate danger prompts are handled through explicit
+safety triggers before any normal response is returned.
 
-## Project Status
+---
 
-The project currently supports:
+## Project Overview
 
-- Preparing a 3000-row small training dataset from EmpatheticDialogues.
-- Cleaning dataset artifacts and weak continuation-style labels.
-- Generating assistant-style supportive responses for supervised fine-tuning.
-- Training a QLoRA adapter with TRL `SFTTrainer`.
-- Loading the fine-tuned LoRA adapter for inference.
-- Running safety checks before generation.
-- Evaluating responses for safety, repetition, and contextual relevance.
+This project fine-tunes a Mistral 7B-based emotional support chatbot using the
+[Empathetic Dialogues (Facebook AI) dataset from Kaggle](https://www.kaggle.com/datasets/atharvjairath/empathetic-dialogues-facebook-ai),
+Hugging Face Transformers, PEFT, TRL, bitsandbytes, and QLoRA. The work also
+includes a safe local demo app so reviewers can run the interface without
+needing a GPU.
 
-Current active adapter:
+The full Mistral 7B adapter workflow requires a CUDA GPU or Google Colab GPU
+runtime. The local Streamlit app is clearly marked as a **keyword-based demo**
+and is provided only to show the chatbot interface, safety behavior, and
+reviewer-friendly interaction flow.
 
-```text
-outputs/mistral-mental-health-lora-safe-v3
-```
+---
 
-The adapter is kept locally and ignored by Git. Later, it can be uploaded to Hugging Face Hub and loaded from there instead of storing it in the repository.
+## Main Submission Modes
+
+| Mode | Purpose | Hardware | Entry Point |
+|---|---|---|---|
+| Safe Demo Mode | Shows the chatbot UI, safety behavior, and sample support responses | CPU is enough | `streamlit run app.py` |
+| Full Model Inference | Loads Mistral 7B with the trained LoRA adapter | CUDA GPU / Colab GPU | `python src/inference.py` |
+| Training Workflow | Rebuilds the fine-tuning process | CUDA GPU / Colab GPU | `python src/train.py` |
+
+---
+
+## Dataset Source and Sampling
+
+The dataset source used for this project was
+[Empathetic Dialogues (Facebook AI) on Kaggle](https://www.kaggle.com/datasets/atharvjairath/empathetic-dialogues-facebook-ai).
+The workflow started with a smaller sample first, then expanded during later
+training attempts:
+
+| Step | Dataset Work |
+|---|---|
+| Initial sample | Used a smaller 1000-row working sample to test cleaning, formatting, and early fine-tuning behavior. |
+| Expanded sample | Prepared a larger 3000-row sample for later training/refinement attempts after applying data, label, and format engineering. |
+| Current repository artifact | Includes the cleaned small review dataset files, with `data/train_small.jsonl` containing 1000 rows and `data/train_clean_v3.jsonl` containing 994 rows after cleanup and deduplication. |
+
+The dataset was not used as raw chatbot output directly. It was processed into
+assistant-style support examples through:
+
+- **data engineering:** cleaning text artifacts, filtering weak examples, and
+  removing duplicates,
+- **label engineering:** rewriting responses so they sound like supportive
+  assistant replies instead of dialogue continuations,
+- **format engineering:** converting each row into the Mistral instruction
+  format used for supervised fine-tuning.
+
+---
+
+## Tools and Libraries
+
+| Library / Tool | Function in This Project |
+|---|---|
+| `streamlit` | Builds the local chatbot interface with chat history, input area, demo alert, and keyword-category explanation. |
+| `torch` | Runs deep learning operations for Mistral model loading, training, and generation. |
+| `transformers` | Loads the tokenizer, Mistral 7B model, quantization config, generation settings, and training arguments. |
+| `datasets` | Loads EmpatheticDialogues and local JSONL training files. |
+| `accelerate` | Helps place model components on available GPU hardware during training/inference. |
+| `peft` | Adds and loads LoRA adapters for parameter-efficient fine-tuning. |
+| `trl` | Provides `SFTTrainer` for supervised fine-tuning on formatted instruction-response data. |
+| `bitsandbytes` | Enables 4-bit quantization for QLoRA so Mistral 7B can be trained with reduced VRAM. |
+| `pandas` | Supports dataset cleaning, filtering, deduplication, and label preparation. |
+| Google Colab | Used for GPU-based training because local CPU execution is not practical for Mistral 7B. |
+| ChatGPT | Used as a learning aid for understanding concepts, refining approaches, and reasoning through data/model improvement steps. |
+
+---
 
 ## Project Structure
 
 ```text
 mental-health-chatbot/
+|-- app.py                         # Streamlit CPU-safe chatbot demo
+|-- .streamlit/
+|   `-- config.toml                # Streamlit review-friendly defaults
 |-- data/
-|   |-- train_small.jsonl
-|   `-- train_clean_v3.jsonl
-|-- outputs/
-|   `-- mistral-mental-health-lora-safe-v3/   # local only, ignored by Git
+|   |-- train_small.jsonl           # prepared small dataset
+|   `-- train_clean_v3.jsonl        # cleaned v3 training dataset
+|-- notebooks/
+|   `-- submission_demo.ipynb       # lightweight review/Colab guide
 |-- src/
-|   |-- __init__.py
-|   |-- clean_dataset.py
-|   |-- config.py
-|   |-- evaluate_model.py
-|   |-- evaluate_responses.py
-|   |-- inference.py
-|   |-- inspect_dataset.py
-|   |-- prepare_dataset.py
-|   |-- safety.py
-|   |-- train.py
-|   |-- utils.py
-|   `-- validate_dataset_quality.py
+|   |-- clean_dataset.py            # local v3 dataset cleanup
+|   |-- config.py                   # paths, model names, and cache settings
+|   |-- demo_chatbot.py             # CPU-safe keyword demo response engine
+|   |-- evaluate_model.py           # prompt-based model evaluation script
+|   |-- evaluate_responses.py       # dataset response quality review
+|   |-- inference.py                # full Mistral + LoRA inference
+|   |-- inspect_dataset.py          # dataset inspection checks
+|   |-- prepare_dataset.py          # EmpatheticDialogues preparation
+|   |-- safety.py                   # crisis keyword checks and safe response
+|   |-- train.py                    # QLoRA fine-tuning script
+|   |-- utils.py                    # shared helper functions
+|   `-- validate_dataset_quality.py # dataset quality gate
 |-- .gitignore
-|-- AGENTS.md                              # local only, ignored by Git
 |-- README.md
 `-- requirements.txt
 ```
 
-## Major Files
+Local adapter files are stored under `outputs/` and are ignored by Git because
+they can be large. If included in final submission, the adapter should be
+uploaded separately to Hugging Face Hub.
 
-- `src/config.py`: Central settings for project paths, base model, adapter path, Hugging Face cache, and small-run training limits.
-- `src/prepare_dataset.py`: Loads EmpatheticDialogues, cleans text artifacts, filters weak rows, creates supportive assistant labels, formats examples in Mistral chat style, and saves `data/train_small.jsonl`.
-- `src/clean_dataset.py`: Local-only v3 cleanup script. It reads `data/train_small.jsonl`, rewrites repeated/template assistant responses, and saves `data/train_clean_v3.jsonl` without loading Hugging Face datasets.
-- `src/inspect_dataset.py`: Prints row count, average text length, shortest and longest examples, random samples, and Mistral format consistency.
-- `src/validate_dataset_quality.py`: Checks for short responses, robotic phrases, continuation responses, own storytelling, therapeutic template wording, and invalid Mistral format.
-- `src/evaluate_responses.py`: Prints sampled dataset labels with lightweight quality comments before training.
-- `src/train.py`: Runs QLoRA fine-tuning on `data/train_clean_v3.jsonl` and saves LoRA adapter files to `outputs/mistral-mental-health-lora-safe-v3`.
-- `src/inference.py`: Loads the base Mistral model from cache, attaches the LoRA adapter, checks self-harm safety first, and generates responses for test prompts.
-- `src/evaluate_model.py`: Tests the fine-tuned chatbot on 20 prompts and reports safety, repetition, and contextual checks.
-- `src/safety.py`: Stores crisis keywords and the fixed self-harm safety response.
-- `src/utils.py`: Small shared helper functions.
+---
 
-## Libraries Used
+## End-to-End Workflow
 
-- `torch`: Deep learning framework used by Transformers for model execution.
-- `transformers`: Loads Mistral 7B, tokenizers, quantization config, and training arguments.
-- `datasets`: Loads EmpatheticDialogues and JSONL training data.
-- `accelerate`: Helps Transformers place model parts across available hardware.
-- `peft`: Adds and loads LoRA adapters for parameter-efficient fine-tuning.
-- `trl`: Provides `SFTTrainer` for supervised fine-tuning.
-- `bitsandbytes`: Enables 4-bit quantization for QLoRA.
-- `pandas`: Cleans and filters dataset rows.
-- `scikit-learn`: Available for lightweight evaluation or future splitting utilities.
-- `streamlit`: Reserved for a future local chatbot interface.
+| Stage | What Was Done | Main Files |
+|---|---|---|
+| 1. Dataset selection | Used the Kaggle Empathetic Dialogues dataset as the emotional conversation source. | `src/prepare_dataset.py` |
+| 2. Data cleaning | Replaced dataset artifacts, normalized text, filtered low-context examples, and removed weak rows. | `src/prepare_dataset.py` |
+| 3. Label engineering | Built supportive assistant responses instead of directly using continuation-style dialogue labels. | `src/prepare_dataset.py` |
+| 4. Format engineering | Converted rows into Mistral instruction format using system message, user message, and assistant response. | `src/prepare_dataset.py` |
+| 5. Quality checks | Checked short responses, repeated phrases, invalid format, duplicate prompts, and own-storytelling patterns. | `src/inspect_dataset.py`, `src/validate_dataset_quality.py` |
+| 6. Training | Fine-tuned Mistral 7B through QLoRA and LoRA adapter training. | `src/train.py` |
+| 7. Iteration | Repeated training/refinement across v1, v2, and v3 to reduce robotic and repeated responses. | `src/clean_dataset.py`, `src/train.py` |
+| 8. Safety | Added crisis keyword detection and fixed safe responses for self-harm or immediate-danger prompts. | `src/safety.py`, `src/inference.py` |
+| 9. Evaluation | Tested prompts for contextual relevance, repetition, and safety behavior. | `src/evaluate_model.py` |
+| 10. Demo interface | Added a Streamlit chatbot UI that runs without GPU for reviewers. | `app.py`, `src/demo_chatbot.py` |
 
-## Setup
+---
 
-Create an environment and install dependencies:
+## Iteration History: v1 to v3
+
+This project was not completed in one pass. The workflow went through repeated
+training and refinement cycles, including Colab runs across **two different
+Google accounts** due to GPU/runtime limits. The model and data pipeline were
+retrained around **7 to 8 times** while improving response quality and safety.
+
+| Version | Focus | Main Improvement |
+|---|---|---|
+| v1 | Initial fine-tuning workflow | Built the first dataset preparation, Mistral formatting, and QLoRA training path. |
+| v2 | Safer response behavior | Improved support style, reduced weak continuation-style replies, and started stricter safety handling. |
+| v3 | Cleaner final dataset | Rewrote repeated/template responses, banned stale phrases, removed duplicate rows, and validated final training data. |
+
+Important refinements:
+
+- Reworked dataset labels so the assistant responds supportively instead of
+  sounding like another speaker continuing the dialogue.
+- Added banned phrase checks for robotic or repeated wording.
+- Rebuilt `train_clean_v3.jsonl` after removing duplicate prompts and duplicate
+  assistant responses.
+- Added safety-first inference so crisis prompts skip normal generation.
+- Used small training runs before heavier training to reduce wasted GPU time.
+- Evaluated responses repeatedly for repetition, context, and safety.
+
+---
+
+## Safety Design
+
+The project uses explicit safety handling before model generation.
+
+- `src/safety.py` stores crisis keywords and the fixed crisis response.
+- `src/inference.py` checks safety before sending the prompt to the model.
+- `src/demo_chatbot.py` also checks the same safety function before returning a
+  keyword-based demo response.
+- Self-harm or immediate-danger messages do not receive a normal chatbot reply.
+
+Current safety limits:
+
+- The chatbot provides emotional support only.
+- It does not diagnose mental illness.
+- It does not claim to treat or cure mental health conditions.
+- It does not replace therapy, counseling, emergency care, or professional
+  medical advice.
+- It encourages emergency services or a trusted person for crisis situations.
+
+---
+
+## Streamlit Demo App
+
+Run the local demo:
 
 ```bash
 pip install -r requirements.txt
+streamlit run app.py
 ```
 
-Mistral 7B QLoRA requires a CUDA-capable NVIDIA GPU. If local CUDA is not available, use a GPU runtime such as Google Colab for training.
+The demo app includes:
 
-## Workflow
+- one prompt area for users to share feelings or situations,
+- conversation-style chat bubbles,
+- a visible alert explaining that local demo responses are keyword-based,
+- an expandable list of keyword categories used by the demo engine,
+- crisis-safety handling for self-harm prompts,
+- a clear note that the real Mistral 7B adapter is not loaded in local demo
+  mode.
 
-Prepare the small dataset:
+Demo keyword categories include:
 
-```bash
-python src/prepare_dataset.py
-```
+- accident / near-death experience,
+- academic setback,
+- positive friendship,
+- loneliness,
+- anxiety,
+- anger,
+- guilt,
+- work pressure,
+- family,
+- health.
 
-Inspect the generated JSONL:
+This app is intentionally included so reviewers can verify the interface and
+safety behavior without GPU access. It is not presented as the real fine-tuned
+adapter output.
 
-```bash
-python src/inspect_dataset.py
-```
+---
 
-Create the local-only v3 cleaned dataset:
+## Full Mistral Inference
 
-```bash
-python src/clean_dataset.py
-```
-
-Run the dataset quality gate:
-
-```bash
-python src/validate_dataset_quality.py
-```
-
-Review sampled generated labels:
-
-```bash
-python src/evaluate_responses.py
-```
-
-Train the QLoRA adapter:
-
-```bash
-python src/train.py
-```
-
-Run inference after the adapter exists:
+Full inference loads the base Mistral 7B model and the trained LoRA adapter:
 
 ```bash
 python src/inference.py
 ```
 
-Evaluate the fine-tuned chatbot:
+Default local adapter path:
+
+```text
+outputs/mistral-mental-health-lora-safe-v3
+```
+
+This mode requires a CUDA GPU or Colab GPU runtime. Normal CPU-only machines are
+not suitable for running Mistral 7B inference.
+
+---
+
+## Training Commands
+
+Run these steps in order:
 
 ```bash
+python src/prepare_dataset.py
+python src/inspect_dataset.py
+python src/clean_dataset.py
+python src/validate_dataset_quality.py
+python src/evaluate_responses.py
+python src/train.py
 python src/evaluate_model.py
 ```
 
-## Configuration
+The training script is intentionally configured for a small controlled run
+before scaling. This helps verify the workflow before spending more GPU time.
 
-Main settings live in `src/config.py`.
+---
 
-Defaults:
+## What I Learned
+
+Through this project, the work covered practical concepts behind:
+
+- dataset cleaning and filtering,
+- label engineering for safer assistant-style responses,
+- data engineering for JSONL training files,
+- format engineering for Mistral instruction-response examples,
+- QLoRA and LoRA adapter-based fine-tuning,
+- repeated model refinement after observing weak outputs,
+- safety-first chatbot response design,
+- separating a reviewer-friendly demo app from GPU-only model inference.
+
+---
+
+## Cleanup Notes
+
+The repository was cleaned so the GitHub submission focuses on useful source
+files, documentation, and reproducible workflow files.
+
+Removed because they no longer had a project use:
+
+- `excalidraw.log`: leftover log file unrelated to the chatbot workflow.
+- `streamlit_app.log`: generated local Streamlit test log.
+- `streamlit_app.err.log`: generated local Streamlit error log.
+- `scikit-learn` from `requirements.txt`: it was not imported or used by the
+  current codebase.
+
+Kept out of Git intentionally:
+
+- `outputs/`: local LoRA adapter and training artifacts, better uploaded to
+  Hugging Face Hub if needed.
+- `AGENTS.md`: local development instructions, not part of the public
+  submission.
+
+---
+
+## Submission Checklist
+
+For GitHub:
+
+- Include source code, README, requirements, notebook, and small dataset files.
+- Do not commit `outputs/`, Hugging Face cache folders, `.env` files, logs, or
+  local temporary files.
+- Keep the Streamlit app as the CPU-safe reviewer demo.
+
+For Hugging Face:
+
+- Upload the generated LoRA adapter folder if adapter files are part of the
+  final submission.
+- Share the Hugging Face adapter link along with the GitHub repository link.
+- Do not upload private tokens, local cache folders, or unrelated files.
+
+Suggested final submission format:
 
 ```text
-BASE_MODEL=mistralai/Mistral-7B-v0.1
-ADAPTER_PATH=outputs/mistral-mental-health-lora-safe-v3
-DATA_PATH=data/train_clean_v3.jsonl
-HF_CACHE_DIR=/root/.cache/huggingface
-HF_HUB_CACHE=/root/.cache/huggingface/hub
-HF_LOCAL_FILES_ONLY=false
+GitHub Repository: <your GitHub repo link>
+Hugging Face Adapter: <your Hugging Face adapter link, if uploaded>
+Demo Command: streamlit run app.py
+Full Model Note: Mistral 7B inference requires Colab GPU or CUDA GPU.
 ```
-
-You can override these with environment variables when needed. For example:
-
-```bash
-set ADAPTER_PATH=outputs/mistral-mental-health-lora-safe-v3
-set HF_LOCAL_FILES_ONLY=false
-```
-
-Set `HF_LOCAL_FILES_ONLY=true` only when you want inference to use already-cached base model files and avoid downloading model weights.
-
-## GitHub Notes
-
-The repository is prepared so source code and documentation can be committed safely, while large local artifacts stay out of Git.
-
-Do not commit:
-
-- Hugging Face base model cache.
-- `outputs/` adapter folders unless you explicitly choose to publish them.
-- `__pycache__/` or `.pyc` files.
-- Temporary archives or generated images.
-- `.env` files or secrets.
-- `AGENTS.md`.
-
-If you later want to share the LoRA adapter, the cleaner path is to upload it to Hugging Face Hub and mention the adapter repository in this README.
-
-## Safety Rules
-
-- The chatbot provides emotional support only.
-- It must not diagnose mental illness.
-- It must not claim to treat mental health conditions.
-- It must not replace therapy, counseling, emergency care, or professional medical advice.
-- It should respond with validation, reassurance, and specific support.
-- If self-harm or immediate danger language is detected, it must return the fixed crisis-safe response and skip model generation.
